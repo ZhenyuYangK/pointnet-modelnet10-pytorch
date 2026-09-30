@@ -56,6 +56,12 @@ def main() -> None:
         ax.set(xlim=(-1, 1), ylim=(-1, 1), zlim=(-1, 1), xlabel="x", ylabel="y", zlabel="z")
         ax.set_box_aspect((1, 1, 1))
         ax.view_init(elev=22, azim=-55)
+        if args.all_classes:
+            # 总览图集中展示轮廓；单样本图保留坐标轴，方便理解坐标。
+            ax.set_axis_off()
+        else:
+            for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+                axis.set_ticks((-1, 0, 1))
         ax.set_title(f"{path.stem}\nlabel={label} ({dataset.classes[label]})")
         print(f"Sample: {path.name}; shape={list(points.shape)}; label={label}")
 
