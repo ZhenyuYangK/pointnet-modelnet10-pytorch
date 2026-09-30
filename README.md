@@ -1,6 +1,6 @@
 # PointNet on ModelNet10 with PyTorch
 
-使用 PyTorch 实现面向 ModelNet10 数据集的 PointNet 三维点云分类课程项目。
+使用 PyTorch 实现面向 ModelNet10 数据集的 PointNet 三维点云分类项目。
 
 
 ## 当前进度
