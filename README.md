@@ -33,9 +33,9 @@
 
 ## 环境与依赖
 
-### 已验证的本机环境
+### 已验证的环境
 
-- 系统：Ubuntu Linux x86_64
+- 系统：Ubuntu 22.04
 - Python：3.10.12
 - GPU：NVIDIA GeForce RTX 4060 Laptop GPU
 - NVIDIA 驱动：580.126.09（`nvidia-smi` 显示 CUDA 13.0）
