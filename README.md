@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-已完成项目框架、ModelNet10 原始数据准备和本机 Python / PyTorch CUDA 环境配置。已实现 OFF 读取、表面采样、点云归一化和 Dataset，并提供数据检查、DataLoader 批次检查及点云可视化脚本。数据管线已通过全部 4899 个模型的读取与数值检查，点云可视化和 DataLoader 批次检查通过。下一阶段是基础 PointNet，模型和训练流程尚未实现。
+已完成项目框架、ModelNet10 原始数据准备和本机 Python / PyTorch CUDA 环境配置。已实现 OFF 读取、表面采样、点云归一化和 Dataset，并提供数据检查、DataLoader 批次检查及点云可视化脚本。数据管线已通过全部 4899 个模型的读取与数值检查，点云可视化和 DataLoader 批次检查通过。基础 PointNet 已实现，并通过 CPU / CUDA 上的真实数据前向、点顺序不变性和反向传播检查。下一阶段是单 batch 过拟合验证，训练流程尚未实现。
 
 
 ## 项目结构
@@ -146,9 +146,49 @@ python scripts/visualize_sample.py --all-classes
 用 `--num-points 2048` 改变采样点数。图中颜色表示 z 坐标，类别名称来自文件夹标签。
 两个脚本默认固定 `seed=42`，相同参数会得到相同点云；Dataset 未传入 `seed` 时，每次读取会重新随机采样。
 
+## 基础 PointNet
+
+模型位于 `models/pointnet.py`，类名为 `PointNetClassifier`，当前是没有 T-Net 的基础版本。
+输入为 `[B, N, 3]`，输出为 `[B, 10]`。`B` 是一批物体的数量，`N` 是每个物体的点数。
+
+| 步骤 | 做什么 | 张量形状 |
+| --- | --- | --- |
+| 输入 | 每个点有 x、y、z 坐标 | `[B, N, 3]` |
+| 转置 | 调整成 Conv1d 要求的维度顺序 | `[B, 3, N]` |
+| 共享 MLP | 对所有点使用同一套计算，特征数 3 → 64 → 128 → 1024 | `[B, 1024, N]` |
+| 全局最大池化 | 对每个特征取所有点中的最大值，得到整个物体的特征 | `[B, 1024]` |
+| 分类层 | 全连接层 1024 → 512 → 256 → 10 | `[B, 10]` |
+
+共享 MLP 使用 `Conv1d(kernel_size=1)`，逐点处理，不依赖点之间的排列位置。
+最大池化的结果不随点的顺序变化。中间的 1024 是**特征数量**，和默认采样的 1024 个点是两个不同概念；模型也能处理其他点数。
+
+输出的 10 个数是类别分数（logits），列顺序对应 `dataset.class_to_idx`。
+模型没有在输出端加 Softmax，后续训练会把这些分数直接交给 `CrossEntropyLoss`。
+当前模型尚未训练，不能用这些分数判断识别效果。
+
+从项目根目录运行：
+
+```bash
+source .venv/bin/activate
+# 使用随机点云观察输入、输出形状，无需读取数据集。
+python -m models.pointnet
+# 使用真实训练样本检查模型，默认检查 CPU 以及可用的 CUDA。
+python scripts/check_model.py --output results/metrics/model_check.json
+```
+
+第一条模型命令输出输入 `[8, 1024, 3]`、输出 `[8, 10]`，参数量为 801354。
+检查脚本验证真实批次形状、有限输出、打乱点顺序后输出一致，以及不同点数和单样本推理。
+它还计算一次交叉熵并调用 `backward()`，确认所有参数能获得有限梯度；没有执行优化器更新。
+检查中的 loss 仅用于确认计算正常，不是训练成果。
+验收记录见 [model_check.json](results/metrics/model_check.json)。
+
+网络使用 BatchNorm 和 Dropout，推理或比较点顺序时需要调用 `model.eval()`；训练时调用 `model.train()`。
+分类层的 BatchNorm 要求训练批次至少包含 2 个物体；评估模式支持只输入 1 个物体。
+后续训练 DataLoader 需要避免最后一个批次只有 1 个样本。
+
 ## 训练与测试
 
-待实现：基础 PointNet、单 batch 过拟合验证、小规模训练、完整训练及测试。
+待实现：单 batch 过拟合验证、小规模训练、完整训练及测试。
 
 ## 实验与可视化
 
@@ -158,4 +198,4 @@ python scripts/visualize_sample.py --all-classes
 
 ## 后续工作
 
-数据管线验收已完成。下一步实现基础 PointNet，先检查输入 `[B, N, 3]` 能否得到输出 `[B, 10]`，再进入单 batch 训练及完整训练流程。
+数据管线和基础 PointNet 验收已完成。下一步先用固定的一小批训练样本反复训练，观察 loss 是否下降、模型能否记住这一批样本；再划分验证集，建立完整训练流程。
