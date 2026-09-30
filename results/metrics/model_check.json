@@ -1,0 +1,108 @@
+{
+  "checked_at_utc": "2026-09-30T08:49:07.461335+00:00",
+  "model": "PointNetClassifier (shared MLP + max pooling, no T-Net)",
+  "torch_version": "2.13.0+cu130",
+  "seed": 42,
+  "data_split": "train",
+  "class_to_idx": {
+    "bathtub": 0,
+    "bed": 1,
+    "chair": 2,
+    "desk": 3,
+    "dresser": 4,
+    "monitor": 5,
+    "night_stand": 6,
+    "sofa": 7,
+    "table": 8,
+    "toilet": 9
+  },
+  "checks": [
+    {
+      "device": "cpu",
+      "device_name": "CPU",
+      "parameter_count": 801354,
+      "input_shape": [
+        8,
+        1024,
+        3
+      ],
+      "output_shape": [
+        8,
+        10
+      ],
+      "permutation_max_abs_difference": 0.0,
+      "variable_shape_checks": [
+        {
+          "input": [
+            1,
+            256,
+            3
+          ],
+          "output": [
+            1,
+            10
+          ]
+        },
+        {
+          "input": [
+            2,
+            1024,
+            3
+          ],
+          "output": [
+            2,
+            10
+          ]
+        }
+      ],
+      "diagnostic_loss": 2.282191753387451,
+      "gradient_l2_norm": 20.678537776001317,
+      "all_parameter_gradients_finite": true,
+      "status": "passed"
+    },
+    {
+      "device": "cuda",
+      "device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "parameter_count": 801354,
+      "input_shape": [
+        8,
+        1024,
+        3
+      ],
+      "output_shape": [
+        8,
+        10
+      ],
+      "permutation_max_abs_difference": 0.0,
+      "variable_shape_checks": [
+        {
+          "input": [
+            1,
+            256,
+            3
+          ],
+          "output": [
+            1,
+            10
+          ]
+        },
+        {
+          "input": [
+            2,
+            1024,
+            3
+          ],
+          "output": [
+            2,
+            10
+          ]
+        }
+      ],
+      "diagnostic_loss": 2.327280044555664,
+      "gradient_l2_norm": 20.587103378670754,
+      "all_parameter_gradients_finite": true,
+      "status": "passed"
+    }
+  ],
+  "elapsed_seconds": 2.15
+}
