@@ -1,5 +1,5 @@
-# Initial dependencies from the project plan; versions await environment validation.
-# Python >= 3.10 is planned. The PyTorch CUDA build will be chosen during setup.
+# Core dependencies for the PointNet ModelNet10 project (Python >= 3.10).
+# Install the PyTorch CPU/CUDA build appropriate for your machine before this file.
 torch
 numpy
 matplotlib
