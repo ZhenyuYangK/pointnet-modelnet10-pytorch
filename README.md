@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-目前已建立项目框架，并导入 ModelNet10 原始训练集与测试集。模型、数据加载和点云采样代码尚未实现；依赖安装与 PyTorch / CUDA 环境验证待后续进行。
+目前已建立项目框架，导入 ModelNet10 原始训练集与测试集，并配置、验证本机 Python / PyTorch CUDA 环境。模型、数据加载和点云采样代码尚未实现。
 
 
 ## 项目结构
@@ -13,7 +13,7 @@
 ```text
 .
 ├── README.md
-├── requirements.txt         # 初步依赖清单，版本待环境验证
+├── requirements.txt         # 项目 Python 依赖清单
 ├── .gitignore
 ├── configs/                 # 后续训练配置
 ├── datasets/                # 数据集读取源码，纳入 Git
@@ -35,7 +35,35 @@
 
 ## 环境与依赖
 
-计划使用 Python >= 3.10 和 PyTorch。`requirements.txt` 为初步依赖清单，安装方式、版本及 CUDA 配置待后续确认与验证。
+### 已验证的本机环境
+
+- 系统：Ubuntu Linux x86_64
+- Python：3.10.12
+- GPU：NVIDIA GeForce RTX 4060 Laptop GPU
+- NVIDIA 驱动：580.126.09（`nvidia-smi` 显示 CUDA 13.0）
+- PyTorch：2.13.0+cu130，CUDA 13.0
+- 已安装并验证：NumPy 2.2.6、Matplotlib 3.10.9、tqdm 4.70.1、scikit-learn 1.7.2
+- 虚拟环境位于仓库根目录 `.venv/`，已加入 `.gitignore`。CUDA 张量运算验证通过。
+
+### 创建环境
+
+在 Linux 上从仓库根目录执行：
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cu130
+python -m pip install -r requirements.txt
+```
+
+`requirements.txt` 包含 PyTorch 和项目 Python 依赖。上面的 PyTorch 安装命令选用 CUDA 13.0 GPU 轮子；PyTorch 轮子自带 CUDA 运行时，本机 NVIDIA 驱动负责与 GPU 通信，无需另行安装 CUDA Toolkit。若使用其他操作系统、CPU 或不同的 NVIDIA 驱动，请先在 [PyTorch 安装页面](https://pytorch.org/get-started/locally/)选择相应安装命令，再安装 `requirements.txt`。
+
+激活环境后，可用以下命令确认 PyTorch 是否识别 GPU：
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
+```
 
 ## 数据集准备
 
@@ -93,4 +121,4 @@ unzip -nq data/ModelNet10.zip 'ModelNet10/*' -d data
 
 ## 后续工作
 
-后续开展环境验证、OFF 网格读取、点云采样与归一化，再实现 PointNet 训练和测试。
+后续实现 OFF 网格读取、点云采样与归一化，再实现 PointNet 训练和测试。
