@@ -11,7 +11,6 @@
 ```text
 .
 ├── README.md
-├── pointnet-modelnet10-pytorch_PLAN.md
 ├── requirements.txt         # 初步依赖清单，版本待环境验证
 ├── .gitignore
 ├── configs/                 # 后续训练配置
