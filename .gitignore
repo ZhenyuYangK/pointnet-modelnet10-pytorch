@@ -28,3 +28,6 @@ env/
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+
+# Local project plan
+/pointnet-modelnet10-pytorch_PLAN.md
