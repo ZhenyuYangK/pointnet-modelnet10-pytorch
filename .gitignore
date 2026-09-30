@@ -1,0 +1,30 @@
+# Local datasets and generated training artifacts
+/data/
+/checkpoints/
+/runs/
+/logs/
+/outputs/
+*.pth
+*.pt
+*.ckpt
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local environments and settings
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db

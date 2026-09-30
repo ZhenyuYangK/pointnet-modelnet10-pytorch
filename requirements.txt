@@ -1,0 +1,13 @@
+# Initial dependencies from the project plan; versions await environment validation.
+# Python >= 3.10 is planned. The PyTorch CUDA build will be chosen during setup.
+torch
+numpy
+matplotlib
+tqdm
+scikit-learn
+
+# Optional dependencies, to be enabled when their use is confirmed:
+# trimesh
+# pandas
+# tensorboard
+# PyYAML
