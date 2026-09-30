@@ -2,13 +2,9 @@
 
 使用 PyTorch 实现面向 ModelNet10 数据集的 PointNet 三维点云分类课程项目。
 
-远程仓库：<https://github.com/ZhenyuYangK/pointnet-modelnet10-pytorch>
-
 ## 当前进度
 
 目前仅建立项目框架，尚未编写 Python 代码或训练配置，未安装依赖、检查 PyTorch / CUDA 或准备数据。后续实现等待进一步规划。
-
-完整计划见 [项目实现计划书](pointnet-modelnet10-pytorch_PLAN.md)。
 
 ## 项目结构
 
