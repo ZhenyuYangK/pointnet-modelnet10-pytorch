@@ -3,11 +3,11 @@
 import torch
 
 
-def train_one_epoch(model, loader, optimizer, criterion, device):
+def train_one_epoch(model, loader, optimizer, criterion, device, progress_every=0):
     """Update model parameters on training batches; criterion uses mean reduction."""
     model.train()
     loss_sum, correct, count = 0.0, 0, 0
-    for points, labels in loader:
+    for batch_index, (points, labels) in enumerate(loader, start=1):
         points, labels = points.to(device), labels.to(device)
         optimizer.zero_grad(set_to_none=True)
         logits = model(points)
@@ -20,6 +20,9 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
         count += len(labels)
         loss_sum += loss.item() * len(labels)
         correct += (logits.argmax(dim=1) == labels).sum().item()
+        if progress_every and batch_index % progress_every == 0:
+            print(f"  train batch {batch_index}/{len(loader)}: samples={count}, "
+                  f"loss={loss_sum / count:.4f}, acc={correct / count:.1%}", flush=True)
     if count == 0:
         raise ValueError("Training loader yielded no samples")
     return {"loss": loss_sum / count, "accuracy": correct / count, "samples": count}
