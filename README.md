@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。数据增强组合的 50 轮训练也已完成，最佳验证准确率为 95.86%（765/798），比 baseline 高 0.88 个百分点。下一步是对已固定的增强模型进行官方测试集评估。
+baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。数据增强组合的 50 轮训练也已完成，最佳验证准确率为 95.86%（765/798），比 baseline 高 0.88 个百分点。增强模型官方测试准确率为 **90.42%**（821/908），比 baseline 高 0.44 个百分点。数据增强阶段已完成，下一阶段为点数对比实验。
 
 
 ## 项目结构
@@ -367,13 +367,13 @@ CSV 中的 confidence 为模型对预测类别给出的 Softmax 分数，不参�
 
 ## 实验与可视化
 
-已完成完整 baseline 训练与测试，生成训练曲线、测试混淆矩阵和预测示例。待开展：数据增强、点数对比和 Pooling 消融。
+已完成 baseline 与数据增强组合的训练、验证和官方测试对比，生成训练曲线、测试混淆矩阵和预测示例。待开展：点数对比和 Pooling 消融。
 
 正式实验记录见 [experiments/README.md](experiments/README.md)。
 
 ## 后续工作
 
-baseline 的数据准备、训练、验证选模、测试评估和可视化已形成完整流程。下一步预先定义对比实验，每次改变一个因素，用验证集比较与选择配置，保留当前 baseline 的全部记录。
+baseline 与数据增强对比已完成。下一阶段预先固定 256／512／1024 点对比方案，其他条件沿用无增强 baseline，以便单独观察点数的影响；1024 点结果可复用现有 baseline。之后开展 Pooling 消融。
 
 ## 数据增强对比
 
@@ -434,4 +434,56 @@ python scripts/compare_augmentation.py \
 
 [对比报告](results/metrics/augmentation_comparison_20261001_seed42.json) · [验证曲线对比](results/metrics/augmentation_comparison_20261001_seed42.png) · [增强训练完整记录](results/metrics/augmentation_20261001_seed42.json) · [增强训练曲线](results/figures/augmentation_20261001_seed42.png)。
 
-增强模型权重：`checkpoints/augmentation_20261001_seed42/best_model.pth`。官方测试准确率尚未评估，不能将 95.86% 作为测试成绩。
+增强模型权重：`checkpoints/augmentation_20261001_seed42/best_model.pth`。官方测试准确率为 90.42%，95.86% 为验证成绩。
+
+## 数据增强模型的官方测试结果
+
+已固定使用验证集选定的第 20 轮权重，全部 908 个测试物体各采样一次，1024 点、seed 42、batch size 32，无增强或投票。RTX 4060 Laptop GPU，耗时 53.62 秒（含读取与绘图）。
+
+| 指标 | Baseline | 数据增强 |
+| --- | ---: | ---: |
+| 最佳验证准确率 | 94.99% | 95.86% |
+| 官方测试正确数 | 817/908 | 821/908 |
+| 官方测试总准确率 | 89.98% | 90.42% |
+| 官方测试平均类别准确率 | 89.80% | 90.12% |
+| 测试交叉熵 | 0.402902 | 0.263691 |
+
+测试总准确率增加 0.44053 个百分点。逐样本比较：两组均正确 788 个，增强纠正 baseline 的 33 个错误，同时将原来正确的 29 个变错，两组均错误 58 个；净多答对 4 个。
+
+| 类别 | Baseline | 数据增强 | 正确数变化 |
+| --- | ---: | ---: | ---: |
+| bathtub | 94.00% | 94.00% | +0 |
+| bed | 98.00% | 100.00% | +2 |
+| chair | 100.00% | 100.00% | +0 |
+| desk | 81.40% | 84.88% | +3 |
+| dresser | 89.53% | 95.35% | +5 |
+| monitor | 96.00% | 98.00% | +2 |
+| night_stand | 72.09% | 56.98% | -13 |
+| sofa | 97.00% | 97.00% | +0 |
+| table | 76.00% | 80.00% | +4 |
+| toilet | 94.00% | 95.00% | +1 |
+
+需要关注：床头柜（night_stand）从 62/86 降到 49/86，准确率下降 15.12 个百分点，其中被识别为 dresser 的数量从 17 增至 31。桌子与书桌的双向混淆从 31 个减至 23 个。总成绩略有提升，各类别收益不一致；这是单个训练 seed 的描述性结果，尚不能证明稳定提升。
+
+评估程序确认所用权重 SHA256 与训练记录一致，评估前后模型状态与权重文件不变。两份预测 CSV 使用相同的 908 个唯一文件与真实标签，采样协议及评估源码一致；对比脚本保存了纠正和退步的具体样本名单。
+
+- [增强模型完整测试指标](results/metrics/test_augmentation_20261001_seed42.json)
+- [逐样本预测](results/metrics/test_augmentation_20261001_seed42_predictions.csv)
+- [混淆矩阵](results/figures/test_augmentation_20261001_seed42_confusion_matrix.png)
+- [正确／错误点云示例](results/figures/test_augmentation_20261001_seed42_examples.png)
+- [逐样本及逐类别对比报告](results/metrics/test_augmentation_comparison_20261001_seed42.json)
+
+复现评估（默认生成新名称）：
+
+```bash
+python test.py --checkpoint checkpoints/augmentation_20261001_seed42/best_model.pth --device cuda
+```
+
+从已有记录重新生成对比（不重新运行推理）：
+
+```bash
+python scripts/compare_test_results.py \
+  --baseline results/metrics/test_baseline_20261001_seed42.json \
+  --candidate results/metrics/test_augmentation_20261001_seed42.json \
+  --output results/metrics/test_augmentation_comparison_new.json
+```

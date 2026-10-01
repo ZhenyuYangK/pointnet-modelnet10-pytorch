@@ -1,0 +1,306 @@
+{
+  "run_name": "test_augmentation_20261001_seed42",
+  "started_at": "2026-10-01T20:09:43.385463+08:00",
+  "status": "completed",
+  "checkpoint": "checkpoints/augmentation_20261001_seed42/best_model.pth",
+  "checkpoint_sha256": "80c3c54249f09eb8f823379884e07a25b32a8396de961ab29910c2751611c1ef",
+  "checkpoint_epoch": 20,
+  "training_report": "/home/eddie/pointnet-modelnet10-pytorch/results/metrics/augmentation_20261001_seed42.json",
+  "checkpoint_matches_training_report_hash": true,
+  "device": "cuda",
+  "device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch_version": "2.13.0+cu130",
+  "data_split": "official test",
+  "num_points": 1024,
+  "seed": 42,
+  "batch_size": 32,
+  "num_workers": 0,
+  "class_to_idx": {
+    "bathtub": 0,
+    "bed": 1,
+    "chair": 2,
+    "desk": 3,
+    "dresser": 4,
+    "monitor": 5,
+    "night_stand": 6,
+    "sofa": 7,
+    "table": 8,
+    "toilet": 9
+  },
+  "protocol": "one fixed surface sample per mesh; no augmentation or voting; checkpoint chosen on validation",
+  "source_files_sha256": {
+    "test.py": "b26687165dd6a005d584077539bfe61399a6737d0178206e9ae7e3ad79d4df4c",
+    "utils/metrics.py": "9f03a6c22d367f57aeeca1653d1f30b45647459c90b668b0638a685464014299",
+    "models/pointnet.py": "bcfd544cc1fdab5ebf933694a8ad8e97b75d68abc32d37bf28cc35f12dceb0cc",
+    "datasets/modelnet10.py": "8f1556f77c42b4d282b78904ce87333583192850f80cfde792d8a262dbae09d1"
+  },
+  "metrics": {
+    "total": 908,
+    "correct": 821,
+    "overall_accuracy": 0.9041850220264317,
+    "mean_class_accuracy": 0.9012093023255814,
+    "per_class": [
+      {
+        "label": 0,
+        "support": 50,
+        "correct": 47,
+        "accuracy": 0.94,
+        "class": "bathtub"
+      },
+      {
+        "label": 1,
+        "support": 100,
+        "correct": 100,
+        "accuracy": 1.0,
+        "class": "bed"
+      },
+      {
+        "label": 2,
+        "support": 100,
+        "correct": 100,
+        "accuracy": 1.0,
+        "class": "chair"
+      },
+      {
+        "label": 3,
+        "support": 86,
+        "correct": 73,
+        "accuracy": 0.8488372093023255,
+        "class": "desk"
+      },
+      {
+        "label": 4,
+        "support": 86,
+        "correct": 82,
+        "accuracy": 0.9534883720930233,
+        "class": "dresser"
+      },
+      {
+        "label": 5,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "monitor"
+      },
+      {
+        "label": 6,
+        "support": 86,
+        "correct": 49,
+        "accuracy": 0.5697674418604651,
+        "class": "night_stand"
+      },
+      {
+        "label": 7,
+        "support": 100,
+        "correct": 97,
+        "accuracy": 0.97,
+        "class": "sofa"
+      },
+      {
+        "label": 8,
+        "support": 100,
+        "correct": 80,
+        "accuracy": 0.8,
+        "class": "table"
+      },
+      {
+        "label": 9,
+        "support": 100,
+        "correct": 95,
+        "accuracy": 0.95,
+        "class": "toilet"
+      }
+    ],
+    "confusion_matrix": [
+      [
+        47,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        100,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        73,
+        7,
+        0,
+        0,
+        2,
+        3,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        82,
+        0,
+        3,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1,
+        98,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        31,
+        1,
+        49,
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        1,
+        97,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        20,
+        0,
+        0,
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        1,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        95
+      ]
+    ],
+    "confusion_matrix_orientation": "rows=true, columns=predicted",
+    "loss": 0.2636908263374876
+  },
+  "top_confusions": [
+    {
+      "true_class": "night_stand",
+      "predicted_class": "dresser",
+      "count": 31
+    },
+    {
+      "true_class": "table",
+      "predicted_class": "desk",
+      "count": 20
+    },
+    {
+      "true_class": "desk",
+      "predicted_class": "dresser",
+      "count": 7
+    },
+    {
+      "true_class": "night_stand",
+      "predicted_class": "table",
+      "count": 4
+    },
+    {
+      "true_class": "toilet",
+      "predicted_class": "chair",
+      "count": 4
+    },
+    {
+      "true_class": "bathtub",
+      "predicted_class": "bed",
+      "count": 3
+    },
+    {
+      "true_class": "desk",
+      "predicted_class": "table",
+      "count": 3
+    },
+    {
+      "true_class": "dresser",
+      "predicted_class": "night_stand",
+      "count": 3
+    },
+    {
+      "true_class": "desk",
+      "predicted_class": "sofa",
+      "count": 2
+    },
+    {
+      "true_class": "desk",
+      "predicted_class": "bed",
+      "count": 1
+    }
+  ],
+  "model_state_unchanged": true,
+  "checkpoint_file_unchanged": true,
+  "predictions_csv": "results/metrics/test_augmentation_20261001_seed42_predictions.csv",
+  "confusion_matrix_figure": "results/figures/test_augmentation_20261001_seed42_confusion_matrix.png",
+  "examples_figure": "results/figures/test_augmentation_20261001_seed42_examples.png",
+  "example_selection": "first correct and incorrect sample per true class, at most three classes each, in dataset order",
+  "example_paths": [
+    "bathtub/test/bathtub_0107.off",
+    "bed/test/bed_0516.off",
+    "chair/test/chair_0890.off",
+    "bathtub/test/bathtub_0111.off",
+    "desk/test/desk_0202.off",
+    "dresser/test/dresser_0212.off"
+  ],
+  "elapsed_seconds": 53.62
+}
