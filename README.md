@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-已完成项目框架、ModelNet10 原始数据准备和本机 Python / PyTorch CUDA 环境配置。已实现 OFF 读取、表面采样、点云归一化和 Dataset，并提供数据检查、DataLoader 批次检查及点云可视化脚本。数据管线已通过全部 4899 个模型的读取与数值检查，点云可视化和 DataLoader 批次检查通过。基础 PointNet 已实现，并通过 CPU / CUDA 上的真实数据前向、点顺序不变性和反向传播检查。下一阶段是单 batch 过拟合验证，训练流程尚未实现。
+已完成项目框架、ModelNet10 原始数据准备和本机 Python / PyTorch CUDA 环境配置。已实现 OFF 读取、表面采样、点云归一化和 Dataset，并提供数据检查、DataLoader 批次检查及点云可视化脚本。数据管线已通过全部 4899 个模型的读取与数值检查，点云可视化和 DataLoader 批次检查通过。基础 PointNet 已通过 CPU / CUDA 上的前向、点顺序不变性和反向传播检查。单 batch 过拟合验证已通过：20 个固定训练样本达到 100% 同批准确率，权重保存、重载结果一致。下一阶段是划分验证集并跑通小规模训练，尚无验证集或测试集准确率。
 
 
 ## 项目结构
@@ -164,7 +164,7 @@ python scripts/visualize_sample.py --all-classes
 
 输出的 10 个数是类别分数（logits），列顺序对应 `dataset.class_to_idx`。
 模型没有在输出端加 Softmax，后续训练会把这些分数直接交给 `CrossEntropyLoss`。
-当前模型尚未训练，不能用这些分数判断识别效果。
+新创建的模型参数是随机初始化的；形状检查中的分数不能用于判断识别效果。
 
 从项目根目录运行：
 
@@ -188,14 +188,56 @@ python scripts/check_model.py --output results/metrics/model_check.json
 
 ## 训练与测试
 
-待实现：单 batch 过拟合验证、小规模训练、完整训练及测试。
+### 单 batch 过拟合验证（已完成）
+
+这一步故意让模型记住一小批训练样本，用来确认数据、标签、梯度和参数更新能够配合工作。
+`scripts/overfit_batch.py` 从官方训练集每类选 2 个模型，共 20 个物体，每个物体采样 256 个点。
+点云在训练前只读取一次，后面 200 次参数更新使用同一批张量。
+
+每次更新的核心流程是：
+
+```python
+optimizer.zero_grad(set_to_none=True)  # 清除旧梯度
+logits = model(points)                # 前向预测
+loss = criterion(logits, labels)      # 交叉熵衡量预测误差
+loss.backward()                       # 计算梯度
+optimizer.step()                      # 更新模型参数
+```
+
+实验使用 Adam、学习率 0.001、seed 42。为排除随机干扰，此诊断将 Dropout 设为 0，且不进行数据增强。
+每步更新后切换到 `eval()`，重新评估同一批训练点云。这里的 eval 指模型运行模式，数据依然来自这 20 个训练样本。
+BatchNorm 在训练和评估模式下使用不同的统计量，因此前期的两条曲线可能有差距。
+
+```bash
+source .venv/bin/activate
+# 默认自动选择可用 CUDA，否则使用 CPU；每次生成独立的结果名称。
+python scripts/overfit_batch.py
+# 也可以明确选择设备、点数和更新次数。
+python scripts/overfit_batch.py --device cpu --num-points 256 --steps 200
+```
+
+验收要求：最终同批评估准确率为 100%，交叉熵小于 0.05 且比初始值下降；保存的权重重新加载后，输出保持一致。
+2026-10-01 的 CPU 实验通过：eval loss 从 2.303629 降到 0.001788，同批准确率从 10% 升到 100%。
+本次运行环境未检测到可用 CUDA，脚本自动使用 CPU；此前的模型 CUDA 检查记录仍保留。
+
+- [本次指标与逐步记录](results/metrics/overfit_20261001_seed42.json)
+- [loss 和准确率曲线](results/figures/overfit_20261001_seed42.png)
+- 本地权重：`checkpoints/overfit_20261001_seed42/model.pth`，已由 Git 忽略；其中也保存了固定点云、标签和模型配置。
+
+重复运行时，指标、图片分别写入 `results/metrics/<run_name>.json` 和 `results/figures/<run_name>.png`，
+权重写入 `checkpoints/<run_name>/model.pth`。可以用 `--run-name` 指定新名称，已有同名实验会拒绝覆盖。
+这项结果证明模型能记住这批样本；对未见过的物体的识别能力，需要后续用独立验证集和测试集衡量。
+
+### 后续训练
+
+待实现：从官方训练集划分验证集、小规模训练、完整训练及最终测试。
 
 ## 实验与可视化
 
-待实现：baseline、数据增强、点数对比、Pooling 消融，以及训练曲线、混淆矩阵和点云预测可视化。
+已生成单 batch 诊断的 loss 和准确率曲线。待实现：完整 baseline、数据增强、点数对比、Pooling 消融，以及正式训练曲线、混淆矩阵和点云预测可视化。
 
 正式实验记录见 [experiments/README.md](experiments/README.md)。
 
 ## 后续工作
 
-数据管线和基础 PointNet 验收已完成。下一步先用固定的一小批训练样本反复训练，观察 loss 是否下降、模型能否记住这一批样本；再划分验证集，建立完整训练流程。
+数据管线、基础 PointNet 和单 batch 过拟合验证已完成。下一步从官方训练集中划分验证集，建立训练与验证循环，先用少量样本跑通 2 个 epoch，再进入完整训练。官方测试集保留到最终评估。
