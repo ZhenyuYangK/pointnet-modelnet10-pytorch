@@ -1,0 +1,301 @@
+{
+  "suite": "results/metrics/point_count_suite_20261001_202518_480158.json",
+  "factor": "num_points",
+  "same_train_validation_test_objects": true,
+  "matched_training_settings": {
+    "epochs": 50,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "dropout": 0.3,
+    "val_fraction": 0.2,
+    "seed": 42,
+    "train_per_class": 0,
+    "val_per_class": 0,
+    "num_workers": 0,
+    "cpu_threads": 4,
+    "optimizer": "Adam",
+    "point_sampling": "fixed seed per mesh, cached in RAM",
+    "augmentation": false,
+    "drop_last": false
+  },
+  "sampling_note": "Same sampler and seed per mesh; clouds at different N are not nested subsets. Each cloud is normalized independently.",
+  "runs": [
+    {
+      "num_points": 256,
+      "train_run": "points256_20261001_202518_480158_seed42",
+      "test_run": "test_points256_20261001_202518_480158_seed42",
+      "best_epoch": 29,
+      "validation_accuracy": 0.9473684210526315,
+      "test_accuracy": 0.8898678414096917,
+      "test_correct": 808,
+      "test_mean_class_accuracy": 0.8820930232558141,
+      "test_loss": 0.35136300464656145,
+      "training_total_seconds": 320.56,
+      "first_epoch_seconds": 297.87,
+      "mean_epoch_2_to_50_seconds": 0.43510204081632653,
+      "test_total_seconds": 55.32,
+      "checkpoint": "checkpoints/points256_20261001_202518_480158_seed42/best_model.pth",
+      "checkpoint_sha256": "5854c184e03d385dcf4368d6f40bfb8d9843839786b0454846ff6ac21b5151c3"
+    },
+    {
+      "num_points": 512,
+      "train_run": "points512_20261001_202518_480158_seed42",
+      "test_run": "test_points512_20261001_202518_480158_seed42",
+      "best_epoch": 48,
+      "validation_accuracy": 0.949874686716792,
+      "test_accuracy": 0.8931718061674009,
+      "test_correct": 811,
+      "test_mean_class_accuracy": 0.8915581395348837,
+      "test_loss": 0.37788941073236526,
+      "training_total_seconds": 338.07,
+      "first_epoch_seconds": 293.89,
+      "mean_epoch_2_to_50_seconds": 0.8744897959183674,
+      "test_total_seconds": 54.77,
+      "checkpoint": "checkpoints/points512_20261001_202518_480158_seed42/best_model.pth",
+      "checkpoint_sha256": "b75c0b6524cbb820b6ef8bd23b8d186d3722fabba524c95a8c046b072e563a61"
+    },
+    {
+      "num_points": 1024,
+      "train_run": "baseline_20261001_seed42_r2",
+      "test_run": "test_baseline_20261001_seed42",
+      "best_epoch": 49,
+      "validation_accuracy": 0.949874686716792,
+      "test_accuracy": 0.8997797356828194,
+      "test_correct": 817,
+      "test_mean_class_accuracy": 0.8980232558139534,
+      "test_loss": 0.40290190781778085,
+      "training_total_seconds": 342.25,
+      "first_epoch_seconds": 274.28,
+      "mean_epoch_2_to_50_seconds": 1.336326530612245,
+      "test_total_seconds": 52.28,
+      "checkpoint": "checkpoints/baseline_20261001_seed42_r2/best_model.pth",
+      "checkpoint_sha256": "4c1fbd92fdbb2dbb7b07aea61d7a630f3c8eb7652a7876dc854aa24dc9a82c23"
+    }
+  ],
+  "selected_by_validation_num_points": 1024,
+  "per_class": {
+    "1024": [
+      {
+        "label": 0,
+        "support": 50,
+        "correct": 47,
+        "accuracy": 0.94,
+        "class": "bathtub"
+      },
+      {
+        "label": 1,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "bed"
+      },
+      {
+        "label": 2,
+        "support": 100,
+        "correct": 100,
+        "accuracy": 1.0,
+        "class": "chair"
+      },
+      {
+        "label": 3,
+        "support": 86,
+        "correct": 70,
+        "accuracy": 0.813953488372093,
+        "class": "desk"
+      },
+      {
+        "label": 4,
+        "support": 86,
+        "correct": 77,
+        "accuracy": 0.8953488372093024,
+        "class": "dresser"
+      },
+      {
+        "label": 5,
+        "support": 100,
+        "correct": 96,
+        "accuracy": 0.96,
+        "class": "monitor"
+      },
+      {
+        "label": 6,
+        "support": 86,
+        "correct": 62,
+        "accuracy": 0.7209302325581395,
+        "class": "night_stand"
+      },
+      {
+        "label": 7,
+        "support": 100,
+        "correct": 97,
+        "accuracy": 0.97,
+        "class": "sofa"
+      },
+      {
+        "label": 8,
+        "support": 100,
+        "correct": 76,
+        "accuracy": 0.76,
+        "class": "table"
+      },
+      {
+        "label": 9,
+        "support": 100,
+        "correct": 94,
+        "accuracy": 0.94,
+        "class": "toilet"
+      }
+    ],
+    "256": [
+      {
+        "label": 0,
+        "support": 50,
+        "correct": 43,
+        "accuracy": 0.86,
+        "class": "bathtub"
+      },
+      {
+        "label": 1,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "bed"
+      },
+      {
+        "label": 2,
+        "support": 100,
+        "correct": 99,
+        "accuracy": 0.99,
+        "class": "chair"
+      },
+      {
+        "label": 3,
+        "support": 86,
+        "correct": 65,
+        "accuracy": 0.7558139534883721,
+        "class": "desk"
+      },
+      {
+        "label": 4,
+        "support": 86,
+        "correct": 56,
+        "accuracy": 0.6511627906976745,
+        "class": "dresser"
+      },
+      {
+        "label": 5,
+        "support": 100,
+        "correct": 96,
+        "accuracy": 0.96,
+        "class": "monitor"
+      },
+      {
+        "label": 6,
+        "support": 86,
+        "correct": 70,
+        "accuracy": 0.813953488372093,
+        "class": "night_stand"
+      },
+      {
+        "label": 7,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "sofa"
+      },
+      {
+        "label": 8,
+        "support": 100,
+        "correct": 86,
+        "accuracy": 0.86,
+        "class": "table"
+      },
+      {
+        "label": 9,
+        "support": 100,
+        "correct": 97,
+        "accuracy": 0.97,
+        "class": "toilet"
+      }
+    ],
+    "512": [
+      {
+        "label": 0,
+        "support": 50,
+        "correct": 48,
+        "accuracy": 0.96,
+        "class": "bathtub"
+      },
+      {
+        "label": 1,
+        "support": 100,
+        "correct": 96,
+        "accuracy": 0.96,
+        "class": "bed"
+      },
+      {
+        "label": 2,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "chair"
+      },
+      {
+        "label": 3,
+        "support": 86,
+        "correct": 70,
+        "accuracy": 0.813953488372093,
+        "class": "desk"
+      },
+      {
+        "label": 4,
+        "support": 86,
+        "correct": 73,
+        "accuracy": 0.8488372093023255,
+        "class": "dresser"
+      },
+      {
+        "label": 5,
+        "support": 100,
+        "correct": 99,
+        "accuracy": 0.99,
+        "class": "monitor"
+      },
+      {
+        "label": 6,
+        "support": 86,
+        "correct": 57,
+        "accuracy": 0.6627906976744186,
+        "class": "night_stand"
+      },
+      {
+        "label": 7,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "sofa"
+      },
+      {
+        "label": 8,
+        "support": 100,
+        "correct": 74,
+        "accuracy": 0.74,
+        "class": "table"
+      },
+      {
+        "label": 9,
+        "support": 100,
+        "correct": 98,
+        "accuracy": 0.98,
+        "class": "toilet"
+      }
+    ]
+  },
+  "limitations": [
+    "One seed only; clouds are not nested",
+    "Historical 1024 run reused",
+    "Timing includes data loading; epoch timing includes both training and validation",
+    "No repeated performance benchmark or statistical significance claim"
+  ],
+  "figure": "results/figures/point_count_comparison_20261001_seed42.png"
+}

@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。数据增强组合的 50 轮训练也已完成，最佳验证准确率为 95.86%（765/798），比 baseline 高 0.88 个百分点。增强模型官方测试准确率为 **90.42%**（821/908），比 baseline 高 0.44 个百分点。数据增强阶段已完成，下一阶段为点数对比实验。
+baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。数据增强组合的 50 轮训练也已完成，最佳验证准确率为 95.86%（765/798），比 baseline 高 0.88 个百分点。增强模型官方测试准确率为 **90.42%**（821/908），比 baseline 高 0.44 个百分点。数据增强阶段已完成，点数对比也已完成：256／512／1024 点测试准确率分别为 88.99%／89.32%／89.98%。下一阶段为 max／average pooling 消融。
 
 
 ## 项目结构
@@ -367,13 +367,13 @@ CSV 中的 confidence 为模型对预测类别给出的 Softmax 分数，不参�
 
 ## 实验与可视化
 
-已完成 baseline 与数据增强组合的训练、验证和官方测试对比，生成训练曲线、测试混淆矩阵和预测示例。待开展：点数对比和 Pooling 消融。
+已完成 baseline 与数据增强组合的训练、验证和官方测试对比，生成训练曲线、测试混淆矩阵和预测示例。点数对比亦已完成。待开展：Pooling 消融。
 
 正式实验记录见 [experiments/README.md](experiments/README.md)。
 
 ## 后续工作
 
-baseline 与数据增强对比已完成。下一阶段预先固定 256／512／1024 点对比方案，其他条件沿用无增强 baseline，以便单独观察点数的影响；1024 点结果可复用现有 baseline。之后开展 Pooling 消融。
+baseline、数据增强和点数对比已完成。下一阶段固定 1024 点及无增强 baseline 的其他条件，仅将 max pooling 改为 average pooling，研究点特征汇总方式的影响。
 
 ## 数据增强对比
 
@@ -487,3 +487,65 @@ python scripts/compare_test_results.py \
   --candidate results/metrics/test_augmentation_20261001_seed42.json \
   --output results/metrics/test_augmentation_comparison_new.json
 ```
+
+## 点数对比实验
+
+目标：研究点云疏密对识别效果和运行时间的影响。保持无增强 baseline 的全部训练设置，只改变 `--num-points`：
+
+| 点数 | 每个物体的输入形状 | 安排 |
+| ---: | --- | --- |
+| 256 | `[256, 3]` | 新训练 50 轮 |
+| 512 | `[512, 3]` | 新训练 50 轮 |
+| 1024 | `[1024, 3]` | 复用已有 baseline |
+
+[同一把椅子的三种点数示意图](results/figures/point_count_preview.png)。共享 MLP 对每个点使用相同网络，max pooling 再沿点这一维聚合为 1024 维特征，所以改变点数不会改变模型参数数量。
+
+固定条件：训练／验证 3193／798，seed 42，batch size 32，Adam 学习率 0.001，Dropout 0.3，50 epoch，max pooling，无数据增强。各模型使用自身训练点数完成官方测试。不同点数按相同采样程序分别生成并归一化，256 点并非 1024 点的固定子集；单次结果包含采样差异。
+
+执行两组新增训练，然后依次评估验证集选定的权重：
+
+```bash
+source .venv/bin/activate
+python scripts/run_point_count_experiments.py --device cuda
+```
+
+也可以逐组手动运行训练入口，例如：
+
+```bash
+python train.py --num-points 256 --augmentation none --device cuda
+python train.py --num-points 512 --augmentation none --device cuda
+```
+
+每次自动创建独立名称，不覆盖旧结果。实验套件记录位于 `results/metrics/point_count_suite_*.json`，其中保存各步名称、命令、状态及日志路径。
+
+本次套件：`results/metrics/point_count_suite_20261001_202518_480158.json`。本次已全部完成；可从已有记录重新生成对比报告：
+
+```bash
+python scripts/compare_point_counts.py \
+  --suite results/metrics/point_count_suite_20261001_202518_480158.json \
+  --output results/metrics/point_count_comparison_new.json \
+  --figure results/figures/point_count_comparison_new.png
+```
+
+报告同时输出 CSV 与图片。汇总要求数据划分、模型源码、其他训练配置一致，评估权重与训练所选权重一致，且测试物体名单一致。总耗时包含解析网格、缓存、训练、权重重载和绘图；另列第 2～50 轮的平均耗时，它包含训练与验证，不等同于纯 GPU 前向耗时。1024 点是历史运行，时间比较仅供观察。
+
+### 本次点数对比结果
+
+两组新增训练均完成 50 轮，最佳权重重载后的验证成绩与记录一致；两组官方测试均完成 908 个物体，所用权重与训练记录哈希一致，评估前后权重和模型状态不变。汇总脚本确认三组的训练／验证名单、其他训练配置、模型及采样源码一致，官方测试文件及真实标签一致。
+
+| 点数 | 最佳轮次 | 验证准确率 | 测试正确数 | 测试准确率 | 测试平均类别准确率 | 总训练耗时 | 缓存后平均每轮 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 256 | 29 | 94.74% | 808/908 | 88.99% | 88.21% | 320.56 秒 | 0.44 秒 |
+| 512 | 48 | 94.99% | 811/908 | 89.32% | 89.16% | 338.07 秒 | 0.87 秒 |
+| 1024 | 49 | 94.99% | 817/908 | 89.98% | 89.80% | 342.25 秒 | 1.34 秒 |
+
+“缓存后平均每轮”取第 2～50 轮，每轮包括训练与验证。首轮耗时分别为 297.87／293.89／274.28 秒，占总耗时大部分。测试总耗时分别为 55.32／54.77／52.28 秒，也包含网格读取和绘图，因此不能用这些总时长推断纯推理速度。
+
+结论：当前 seed 和采样下，点数从 256 增至 1024，测试准确率提高约 0.99 个百分点，净多答对 9 个物体；缓存后的每轮耗时也增加。512 点与 1024 点最佳验证准确率相同，按预先固定的平局规则，1024 点验证 loss 0.179686 低于 512 点的 0.183277，因此验证选配置仍为 1024 点。这个选择没有使用测试成绩。
+
+结果只覆盖一个 seed，点云不是嵌套采样，1024 点运行时间来自历史记录；不能据此断言增加点数总能改善准确率，也不能当作严格速度基准。各类别的表现并非一致提高，逐类指标保存在汇总 JSON 中。本阶段运行了完整训练、验证和官方测试评估，没有新增或运行单元测试。
+
+- [汇总 JSON](results/metrics/point_count_comparison_20261001_seed42.json)、[汇总 CSV](results/metrics/point_count_comparison_20261001_seed42.csv)、[准确率与耗时对比图](results/figures/point_count_comparison_20261001_seed42.png)。
+- [实验套件命令与状态](results/metrics/point_count_suite_20261001_202518_480158.json)。
+- 256 点：[训练记录](results/metrics/points256_20261001_202518_480158_seed42.json)、[训练曲线](results/figures/points256_20261001_202518_480158_seed42.png)、[测试指标](results/metrics/test_points256_20261001_202518_480158_seed42.json)、[预测 CSV](results/metrics/test_points256_20261001_202518_480158_seed42_predictions.csv)、[混淆矩阵](results/figures/test_points256_20261001_202518_480158_seed42_confusion_matrix.png)。
+- 512 点：[训练记录](results/metrics/points512_20261001_202518_480158_seed42.json)、[训练曲线](results/figures/points512_20261001_202518_480158_seed42.png)、[测试指标](results/metrics/test_points512_20261001_202518_480158_seed42.json)、[预测 CSV](results/metrics/test_points512_20261001_202518_480158_seed42_predictions.csv)、[混淆矩阵](results/figures/test_points512_20261001_202518_480158_seed42_confusion_matrix.png)。
