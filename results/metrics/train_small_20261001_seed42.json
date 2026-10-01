@@ -1,0 +1,110 @@
+{
+  "run_name": "train_small_20261001_seed42",
+  "started_at": "2026-10-01T13:42:50.860694+08:00",
+  "status": "completed",
+  "purpose": "small subset smoke run",
+  "device": "cpu",
+  "torch_version": "2.13.0+cu130",
+  "config": {
+    "root": null,
+    "epochs": 2,
+    "batch_size": 8,
+    "num_points": 256,
+    "learning_rate": 0.001,
+    "dropout": 0.3,
+    "val_fraction": 0.2,
+    "train_per_class": 8,
+    "val_per_class": 2,
+    "seed": 42,
+    "device": "auto",
+    "num_workers": 0,
+    "cpu_threads": 4,
+    "run_name": "train_small_20261001_seed42",
+    "optimizer": "Adam",
+    "point_sampling": "fixed seed per mesh, cached in RAM",
+    "augmentation": false,
+    "drop_last": false
+  },
+  "split_counts": {
+    "train": 3193,
+    "validation": 798
+  },
+  "used_counts": {
+    "train": 80,
+    "validation": 20
+  },
+  "used_class_counts": {
+    "train": {
+      "bathtub": 8,
+      "bed": 8,
+      "chair": 8,
+      "desk": 8,
+      "dresser": 8,
+      "monitor": 8,
+      "night_stand": 8,
+      "sofa": 8,
+      "table": 8,
+      "toilet": 8
+    },
+    "validation": {
+      "bathtub": 2,
+      "bed": 2,
+      "chair": 2,
+      "desk": 2,
+      "dresser": 2,
+      "monitor": 2,
+      "night_stand": 2,
+      "sofa": 2,
+      "table": 2,
+      "toilet": 2
+    }
+  },
+  "split_manifest": "results/metrics/train_small_20261001_seed42_split.json",
+  "official_test_used": false,
+  "history": [
+    {
+      "epoch": 1,
+      "train": {
+        "loss": 1.9422255992889403,
+        "accuracy": 0.3125,
+        "samples": 80
+      },
+      "validation": {
+        "loss": 2.6403266906738283,
+        "accuracy": 0.1,
+        "samples": 20
+      },
+      "elapsed_seconds": 7.73
+    },
+    {
+      "epoch": 2,
+      "train": {
+        "loss": 1.1755523979663849,
+        "accuracy": 0.6375,
+        "samples": 80
+      },
+      "validation": {
+        "loss": 2.9860286712646484,
+        "accuracy": 0.15,
+        "samples": 20
+      },
+      "elapsed_seconds": 0.2
+    }
+  ],
+  "best_selection": "highest validation accuracy; lowest validation loss breaks ties",
+  "best_epoch": 2,
+  "best_validation": {
+    "loss": 2.9860286712646484,
+    "accuracy": 0.15,
+    "samples": 20
+  },
+  "checkpoint": "checkpoints/train_small_20261001_seed42/best_model.pth",
+  "figure": "results/figures/train_small_20261001_seed42.png",
+  "checkpoint_reload_verified": true,
+  "reloaded_validation": {
+    "loss": 2.9860286712646484,
+    "accuracy": 0.15,
+    "samples": 20
+  },
+  "elapsed_seconds": 10.01
+}
