@@ -125,7 +125,9 @@ def main():
     report = {
         "run_name": run_name, "started_at": now.isoformat(), "status": "running",
         "purpose": "small subset smoke run" if args.train_per_class or args.val_per_class else "full training run",
-        "device": device, "torch_version": str(torch.__version__), "config": config,
+        "device": device,
+        "device_name": torch.cuda.get_device_name() if device == "cuda" else "CPU",
+        "torch_version": str(torch.__version__), "config": config,
         "split_counts": {"train": len(train_indices), "validation": len(val_indices)},
         "used_counts": {"train": len(used_train), "validation": len(used_val)},
         "used_class_counts": {
@@ -147,7 +149,10 @@ def main():
     try:
         for epoch in range(1, args.epochs + 1):
             epoch_start = time.perf_counter()
-            train_metrics = train_one_epoch(model, train_loader, optimizer, criterion, device)
+            train_metrics = train_one_epoch(model, train_loader, optimizer, criterion, device,
+                                            progress_every=25 if epoch == 1 else 0)
+            if epoch == 1:
+                print("First training epoch finished; sampling and evaluating validation meshes.", flush=True)
             val_metrics = evaluate(model, val_loader, criterion, device)
             history.append({"epoch": epoch, "train": train_metrics, "validation": val_metrics,
                             "elapsed_seconds": round(time.perf_counter() - epoch_start, 2)})
