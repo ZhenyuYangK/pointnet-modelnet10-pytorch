@@ -22,6 +22,34 @@
 
 复现：`python scripts/overfit_batch.py --device cpu`。默认生成新名称，保留本次记录。
 
+## 2026-10-01：2 epoch 小规模训练／验证
+
+- 实验编号：`train_small_20261001_seed42`。
+- 目的：验收独立验证集、完整 epoch 循环、逐轮日志及最佳权重保存／重载流程。
+- 完整划分：只使用官方 train，按类别取约 20% 验证，得到训练 3193、验证 798；没有重叠。
+- 实际用量：从上述两边分别每类取 8／2 个，共训练 80、验证 20。官方 test 未参与。
+- 模型与设置：基础 PointNet，max pooling，Dropout 0.3，256 点，batch size 8，Adam，学习率 0.001，2 epoch，seed 42。
+- 采样：每个网格按固定 seed 采样，缓存在内存；训练逐轮打乱样本顺序，无数据增强。
+- 设备：CPU，4 个计算线程，DataLoader worker 0；总运行约 10.01 秒。
+
+| Epoch | Train loss | Train accuracy | Validation loss | Validation accuracy |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 1.9422 | 31.25% | 2.6403 | 10% |
+| 2 | 1.1756 | 63.75% | 2.9860 | 15% |
+
+- 最佳 epoch：2，按验证准确率优先、相同时按较低验证 loss 选择。
+- 保存权重重新加载后，在相同验证点云上的 loss／accuracy 与记录一致。
+- 结论：训练流程验收通过。验证集仅 20 个样本，准确率 15% 为 3/20；验证 loss 上升，不应视为模型性能已达标。正式 baseline 和最终测试尚未开展。
+- [指标与配置](../results/metrics/train_small_20261001_seed42.json)、[完整及实际划分名单](../results/metrics/train_small_20261001_seed42_split.json)、[曲线](../results/figures/train_small_20261001_seed42.png)。
+- 本地权重：`checkpoints/train_small_20261001_seed42/best_model.pth`，不纳入 Git。
+
+复现（默认生成新实验名称）：
+
+```bash
+python train.py --epochs 2 --batch-size 8 --num-points 256 \
+  --train-per-class 8 --val-per-class 2
+```
+
 ## 记录模板
 
 - 实验编号与日期：
