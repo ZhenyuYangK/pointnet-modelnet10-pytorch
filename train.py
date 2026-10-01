@@ -4,6 +4,7 @@ import argparse
 from collections import Counter
 from datetime import datetime
 import json
+import hashlib
 import math
 from pathlib import Path
 import re
@@ -15,6 +16,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from datasets import ModelNet10
+from datasets.augmentation import PointCloudAugmentation
 from datasets.split import CachedPointCloudSubset, limit_per_class, stratified_split
 from models.pointnet import PointNetClassifier
 from utils.seed import seed_everything
@@ -36,6 +38,8 @@ def parse_args():
     parser.add_argument("--train-per-class", type=int, default=0, help="Debug subset limit; 0 uses all training samples")
     parser.add_argument("--val-per-class", type=int, default=0, help="Debug subset limit; 0 uses all validation samples")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--augmentation", choices=("none", "scale_shift_jitter"), default="none",
+                        help="Training-only augmentation; validation always uses fixed clouds")
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--cpu-threads", type=int, default=4)
@@ -114,9 +118,12 @@ def main():
     model = PointNetClassifier(**model_kwargs).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     criterion = nn.CrossEntropyLoss()
+    augmentation = (PointCloudAugmentation(args.seed, device)
+                    if args.augmentation == "scale_shift_jitter" else None)
     config = {key: str(value) if isinstance(value, Path) else value for key, value in vars(args).items()}
     config.update({"optimizer": "Adam", "point_sampling": "fixed seed per mesh, cached in RAM",
-                   "augmentation": False, "drop_last": drop_last})
+                   "augmentation": augmentation.config if augmentation else False,
+                   "drop_last": drop_last})
     checkpoint_dir.mkdir(parents=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     figure_path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,6 +135,11 @@ def main():
         "device": device,
         "device_name": torch.cuda.get_device_name() if device == "cuda" else "CPU",
         "torch_version": str(torch.__version__), "config": config,
+        "source_files_sha256": {
+            name: hashlib.sha256((PROJECT_ROOT / name).read_bytes()).hexdigest()
+            for name in ("train.py", "models/pointnet.py", "datasets/modelnet10.py",
+                         "datasets/split.py", "datasets/augmentation.py", "utils/training.py", "utils/seed.py")
+        },
         "split_counts": {"train": len(train_indices), "validation": len(val_indices)},
         "used_counts": {"train": len(used_train), "validation": len(used_val)},
         "used_class_counts": {
@@ -145,12 +157,14 @@ def main():
     print(f"Run: {run_name}; device={device}; official-train split={len(train_indices)}/{len(val_indices)}", flush=True)
     print(f"Using train={len(train_data)}, validation={len(val_data)}; batch={args.batch_size}; points={args.num_points}; dropout={args.dropout}", flush=True)
     print("First epoch samples meshes; later epochs reuse cached point clouds.", flush=True)
+    print(f"Training augmentation: {args.augmentation}; validation augmentation: none", flush=True)
 
     try:
         for epoch in range(1, args.epochs + 1):
             epoch_start = time.perf_counter()
             train_metrics = train_one_epoch(model, train_loader, optimizer, criterion, device,
-                                            progress_every=25 if epoch == 1 else 0)
+                                            progress_every=25 if epoch == 1 else 0,
+                                            augmentation=augmentation)
             if epoch == 1:
                 print("First training epoch finished; sampling and evaluating validation meshes.", flush=True)
             val_metrics = evaluate(model, val_loader, criterion, device)
@@ -181,6 +195,7 @@ def main():
             raise RuntimeError("Validation loss changed after loading the best checkpoint")
         save_training_curves(history, figure_path, run_name)
         report.update({"status": "completed", "checkpoint_reload_verified": True,
+                       "checkpoint_sha256": hashlib.sha256((checkpoint_dir / "best_model.pth").read_bytes()).hexdigest(),
                        "reloaded_validation": restored_metrics,
                        "elapsed_seconds": round(time.perf_counter() - start, 2)})
         save_json(metrics_path, report)

@@ -1,0 +1,78 @@
+{
+  "scope": "best held-out validation result; no new official test evaluation",
+  "matched_configuration": {
+    "epochs": 50,
+    "batch_size": 32,
+    "num_points": 1024,
+    "learning_rate": 0.001,
+    "dropout": 0.3,
+    "val_fraction": 0.2,
+    "train_per_class": 0,
+    "val_per_class": 0,
+    "seed": 42,
+    "optimizer": "Adam",
+    "point_sampling": "fixed seed per mesh, cached in RAM",
+    "drop_last": false,
+    "num_workers": 0,
+    "cpu_threads": 4
+  },
+  "same_split": true,
+  "augmentation": {
+    "name": "scale_shift_jitter",
+    "order": [
+      "isotropic_scale",
+      "translation",
+      "jitter"
+    ],
+    "scale_range": [
+      0.8,
+      1.2
+    ],
+    "translation_range": [
+      -0.1,
+      0.1
+    ],
+    "jitter_std": 0.01,
+    "jitter_clip": 0.05,
+    "seed": 42,
+    "renormalize_after": false,
+    "scope": "training batches only; fresh draws each visit"
+  },
+  "runs": [
+    {
+      "label": "Baseline",
+      "run_name": "baseline_20261001_seed42_r2",
+      "best_epoch": 49,
+      "validation": {
+        "loss": 0.17968580005541107,
+        "accuracy": 0.949874686716792,
+        "samples": 798
+      },
+      "correct": 758,
+      "elapsed_seconds": 342.25,
+      "checkpoint": "checkpoints/baseline_20261001_seed42_r2/best_model.pth",
+      "checkpoint_sha256": "4c1fbd92fdbb2dbb7b07aea61d7a630f3c8eb7652a7876dc854aa24dc9a82c23"
+    },
+    {
+      "label": "Augmented",
+      "run_name": "augmentation_20261001_seed42",
+      "best_epoch": 20,
+      "validation": {
+        "loss": 0.10666102943734795,
+        "accuracy": 0.9586466165413534,
+        "samples": 798
+      },
+      "correct": 765,
+      "elapsed_seconds": 355.85,
+      "checkpoint": "checkpoints/augmentation_20261001_seed42/best_model.pth",
+      "checkpoint_sha256": "80c3c54249f09eb8f823379884e07a25b32a8396de961ab29910c2751611c1ef"
+    }
+  ],
+  "accuracy_delta_percentage_points": 0.8771929824561431,
+  "limitations": [
+    "One seed only",
+    "Combined augmentation; no individual attribution",
+    "Training accuracy uses different input distributions"
+  ],
+  "figure": "results/metrics/augmentation_comparison_20261001_seed42.png"
+}

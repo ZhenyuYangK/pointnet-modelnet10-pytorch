@@ -3,12 +3,15 @@
 import torch
 
 
-def train_one_epoch(model, loader, optimizer, criterion, device, progress_every=0):
+def train_one_epoch(model, loader, optimizer, criterion, device, progress_every=0,
+                    augmentation=None):
     """Update model parameters on training batches; criterion uses mean reduction."""
     model.train()
     loss_sum, correct, count = 0.0, 0, 0
     for batch_index, (points, labels) in enumerate(loader, start=1):
         points, labels = points.to(device), labels.to(device)
+        if augmentation is not None:
+            points = augmentation(points)
         optimizer.zero_grad(set_to_none=True)
         logits = model(points)
         loss = criterion(logits, labels)

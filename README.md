@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。下一阶段是预先设计数据增强及消融对比实验。
+baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。数据增强组合的 50 轮训练也已完成，最佳验证准确率为 95.86%（765/798），比 baseline 高 0.88 个百分点。下一步是对已固定的增强模型进行官方测试集评估。
 
 
 ## 项目结构
@@ -374,3 +374,64 @@ CSV 中的 confidence 为模型对预测类别给出的 Softmax 分数，不参�
 ## 后续工作
 
 baseline 的数据准备、训练、验证选模、测试评估和可视化已形成完整流程。下一步预先定义对比实验，每次改变一个因素，用验证集比较与选择配置，保留当前 baseline 的全部记录。
+
+## 数据增强对比
+
+数据增强是在训练时对输入作随机变化，标签保持不变。本阶段实现三种组合：
+
+| 方法 | 具体设置 | 直观含义 |
+| --- | --- | --- |
+| 等比例缩放 | 每个物体一个随机因子，范围 0.8～1.2 | 物体变大或变小 |
+| 平移 | 每个物体一个随机向量，各轴 −0.1～0.1 | 物体位置偏移 |
+| 抖动 | 每点每坐标独立高斯噪声，标准差 0.01，截断到 ±0.05 | 点的位置有少量误差 |
+
+数据路径：固定采样与归一化 → 缓存原始点云 → 训练 batch 随机增强 → PointNet。每次访问产生新增强；非原地运算保护缓存。增强后不重新归一化，以保留缩放和平移效果。验证与测试仍使用原始固定点云。
+
+[同一把椅子的增强示意图](results/figures/augmentation_preview.png)。四张图使用相同坐标范围；这里只是展示，CPU 示意图的随机数不要求与 CUDA 训练逐位相同。
+
+代码阅读顺序：
+
+1. `datasets/augmentation.py`：`points * scale + shift + noise` 实现三种变化。
+2. `utils/training.py`：仅在训练前向传播前调用增强。
+3. `train.py`：命令行开关、独立增强随机数生成器与参数记录。
+
+完整实验（默认 50 epoch、1024 点、seed 42，自动创建新名称）：
+
+```bash
+source .venv/bin/activate
+python train.py --augmentation scale_shift_jitter --device cuda
+```
+
+无增强仍是默认行为，可显式传入 `--augmentation none`。完整训练以相同 3193／798 划分、网络、优化器等条件对比；只通过验证集选最佳权重。组合实验不能解释单种增强的贡献，一次 seed 的结果也不能代表重复实验平均水平。
+
+小规模运行命令（用于自行检查接入流程，不用于性能结论）：
+
+```bash
+python train.py --augmentation scale_shift_jitter --epochs 2 \
+  --batch-size 8 --num-points 256 --train-per-class 8 --val-per-class 2
+```
+
+查看增强示例（新输出路径）与生成验证对比报告：
+
+```bash
+python scripts/visualize_augmentation.py --output results/figures/augmentation_preview_new.png
+python scripts/compare_augmentation.py \
+  --baseline results/metrics/baseline_20261001_seed42_r2.json \
+  --augmented results/metrics/augmentation_20261001_seed42.json \
+  --output results/metrics/augmentation_comparison_new.json
+```
+
+比较脚本读取已完成记录，要求两次训练配置、数据划分和模型源码一致，输出 JSON 与同名 PNG 验证曲线。
+
+本次完整对比结果：
+
+| 配置 | 最佳轮次 | 验证正确数 | 最佳验证准确率 | 对应验证 loss | 总训练用时 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 无增强 baseline | 49 | 758/798 | 94.99% | 0.179686 | 342.25 秒 |
+| 缩放 + 平移 + 抖动 | 20 | 765/798 | 95.86% | 0.106661 | 355.85 秒 |
+
+增强组合在本次验证集上净多答对 7 个物体，准确率增加约 0.88 个百分点。时间包含读取网格、训练、最佳权重重载及绘图，单次计时不用于严格性能基准。已完成 50 轮实际训练及内置最佳权重重载验证；本阶段没有新增或运行单元测试。
+
+[对比报告](results/metrics/augmentation_comparison_20261001_seed42.json) · [验证曲线对比](results/metrics/augmentation_comparison_20261001_seed42.png) · [增强训练完整记录](results/metrics/augmentation_20261001_seed42.json) · [增强训练曲线](results/figures/augmentation_20261001_seed42.png)。
+
+增强模型权重：`checkpoints/augmentation_20261001_seed42/best_model.pth`。官方测试准确率尚未评估，不能将 95.86% 作为测试成绩。
