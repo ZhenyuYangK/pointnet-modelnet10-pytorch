@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-已完成项目框架、ModelNet10 原始数据准备和本机 Python / PyTorch CUDA 环境配置。已实现 OFF 读取、表面采样、点云归一化和 Dataset，并提供数据检查、DataLoader 批次检查及点云可视化脚本。数据管线已通过全部 4899 个模型的读取与数值检查，点云可视化和 DataLoader 批次检查通过。基础 PointNet 已通过 CPU / CUDA 上的前向、点顺序不变性和反向传播检查。单 batch 过拟合验证已通过：20 个固定训练样本达到 100% 同批准确率，权重保存、重载结果一致。下一阶段是划分验证集并跑通小规模训练，尚无验证集或测试集准确率。
+已完成数据准备、点云读取、基础 PointNet 和单 batch 过拟合验证。现已实现按类别划分训练／验证集、训练与验证循环、最佳权重保存及训练曲线，并通过 80 个训练样本／20 个验证样本的 2 epoch 小规模运行。当前小验证集准确率为 15%，仅作为流程检查结果；完整 baseline 训练和官方测试集评估尚未开展。
 
 
 ## 项目结构
@@ -15,11 +15,13 @@
 ├── README.md
 ├── requirements.txt         # 项目 Python 依赖清单
 ├── .gitignore
+├── train.py                 # 训练入口，参数通过命令行配置
 ├── configs/                 # 后续训练配置
 ├── datasets/                # 数据集读取源码，纳入 Git
 ├── models/                  # PointNet 模型源码
 ├── utils/                   # 随机种子、指标、可视化、权重管理
 ├── scripts/                 # 检查、可视化、实验脚本
+├── tests/                   # 划分隔离、指标计算及训练更新检查
 ├── experiments/
 │   └── README.md            # 正式实验记录
 ├── results/
@@ -105,7 +107,7 @@ unzip -nq data/ModelNet10.zip 'ModelNet10/*' -d data
 
 官方备用下载地址：<https://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip>。官方和镜像的 ZIP 打包方式不同，压缩包哈希不相同；本次按 OFF 文件逐一核验。
 
-`data/` 已由 `.gitignore` 排除。Dataset 在读取时将原始网格采样成点云并归一化。验证集尚未划分，后续应从训练集中划分，测试集保留用于最终评估。
+`data/` 已由 `.gitignore` 排除。Dataset 在读取时将原始网格采样成点云并归一化。`train.py` 默认从每个类别的官方训练样本中划出约 20% 作为验证集，得到 3193／798 个训练／验证样本；原始文件不移动，划分名单随实验保存。官方测试集保留用于最终评估。
 
 ## 点云读取与检查
 
@@ -163,7 +165,7 @@ python scripts/visualize_sample.py --all-classes
 最大池化的结果不随点的顺序变化。中间的 1024 是**特征数量**，和默认采样的 1024 个点是两个不同概念；模型也能处理其他点数。
 
 输出的 10 个数是类别分数（logits），列顺序对应 `dataset.class_to_idx`。
-模型没有在输出端加 Softmax，后续训练会把这些分数直接交给 `CrossEntropyLoss`。
+模型没有在输出端加 Softmax，训练时把这些分数直接交给 `CrossEntropyLoss`。
 新创建的模型参数是随机初始化的；形状检查中的分数不能用于判断识别效果。
 
 从项目根目录运行：
@@ -184,7 +186,7 @@ python scripts/check_model.py --output results/metrics/model_check.json
 
 网络使用 BatchNorm 和 Dropout，推理或比较点顺序时需要调用 `model.eval()`；训练时调用 `model.train()`。
 分类层的 BatchNorm 要求训练批次至少包含 2 个物体；评估模式支持只输入 1 个物体。
-后续训练 DataLoader 需要避免最后一个批次只有 1 个样本。
+训练 DataLoader 在尾批恰好只有 1 个样本时丢弃尾批；验证保留全部样本。
 
 ## 训练与测试
 
@@ -228,16 +230,66 @@ python scripts/overfit_batch.py --device cpu --num-points 256 --steps 200
 权重写入 `checkpoints/<run_name>/model.pth`。可以用 `--run-name` 指定新名称，已有同名实验会拒绝覆盖。
 这项结果证明模型能记住这批样本；对未见过的物体的识别能力，需要后续用独立验证集和测试集衡量。
 
-### 后续训练
+### 训练／验证循环（小规模运行已通过）
 
-待实现：从官方训练集划分验证集、小规模训练、完整训练及最终测试。
+`train.py` 每个 epoch 先学习训练集，再评估验证集。一个 epoch 表示遍历所选训练数据一遍。
+训练调用 `model.train()` 并更新参数；验证调用 `model.eval()` 和 `torch.no_grad()`，不修改参数或 BatchNorm 统计量。
+loss 按实际样本数加权，准确率为正确预测数除以样本数。
+
+划分与采样约定：
+
+- 先从官方 train 按类别划分 3193 个训练样本、798 个验证样本，默认 `--val-fraction 0.2 --seed 42`。
+- 再从各自划分内抽取调试子集，保证训练与验证的文件不重叠。官方 test 不参与训练、验证或权重选择。
+- 每个模型按固定 seed 采样一次，点云缓存在 CPU 内存，后续 epoch 重用；本阶段没有数据增强。
+- 训练顺序每个 epoch 打乱；验证顺序与采样固定，以便不同 epoch 的指标可比较。
+- 若启用多个 DataLoader worker，每个 worker 有各自的内存缓存。
+
+复现本阶段的小规模运行：
+
+```bash
+source .venv/bin/activate
+python train.py --epochs 2 --batch-size 8 --num-points 256 \
+  --train-per-class 8 --val-per-class 2
+```
+
+这会使用每类 8 个训练样本、2 个验证样本，即 80／20 个；Adam 学习率默认 0.001，Dropout 恢复为 0.3。
+`--train-per-class` 和 `--val-per-class` 默认都是 0，表示使用各自完整划分。`--device auto` 优先用可用 CUDA，否则使用 CPU；
+也可指定 `--device cpu` 或 `--device cuda`。`--num-workers` 默认 0。
+训练参数全部由 argparse 管理，可通过 `python train.py --help` 查看。
+
+每个实验有独立名称；已有同名实验会拒绝覆盖。输出包括：
+
+- `results/metrics/<run_name>.json`：配置、逐 epoch 指标、最佳 epoch 和权重重载检查结果。
+- `results/metrics/<run_name>_split.json`：完整划分及本次实际使用的文件名单。
+- `results/figures/<run_name>.png`：训练／验证曲线。
+- `checkpoints/<run_name>/best_model.pth`：最佳模型权重、类别映射、配置和划分记录路径，不纳入 Git。
+
+最佳模型优先按验证准确率选择，准确率相同时选择验证 loss 更低的一轮。运行结束后加载最佳权重，重新验证并核对结果。
+
+2026-10-01 的 CPU 小规模运行结果：
+
+| Epoch | 训练 loss | 训练准确率 | 验证 loss | 验证准确率 |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 1.9422 | 31.25% | 2.6403 | 10% |
+| 2 | 1.1756 | 63.75% | 2.9860 | 15% |
+
+本次最佳为第 2 轮，保存与重载检查通过。
+验收记录见 [训练指标](results/metrics/train_small_20261001_seed42.json)、
+[划分名单](results/metrics/train_small_20261001_seed42_split.json) 和
+[训练／验证曲线](results/figures/train_small_20261001_seed42.png)。
+
+这里仅评估了 20 个验证样本，15% 表示答对 3 个，不能代表完整验证集或测试集表现。
+验证准确率略升而 loss 上升并不矛盾：准确率只看选中的类别是否正确，交叉熵还取决于模型给真实类别分配的概率。
+本阶段验收的是训练流程；完整 baseline 尚未运行。
+
+基础检查：`python -m unittest discover -s tests -v`，覆盖划分不重叠、调试子集边界、验证不更新模型、指标加权和训练参数更新。
 
 ## 实验与可视化
 
-已生成单 batch 诊断的 loss 和准确率曲线。待实现：完整 baseline、数据增强、点数对比、Pooling 消融，以及正式训练曲线、混淆矩阵和点云预测可视化。
+已生成单 batch 诊断及小规模训练／验证曲线。待开展：完整 baseline、数据增强、点数对比、Pooling 消融，以及正式测试的混淆矩阵和预测可视化。
 
 正式实验记录见 [experiments/README.md](experiments/README.md)。
 
 ## 后续工作
 
-数据管线、基础 PointNet 和单 batch 过拟合验证已完成。下一步从官方训练集中划分验证集，建立训练与验证循环，先用少量样本跑通 2 个 epoch，再进入完整训练。官方测试集保留到最终评估。
+数据管线、基础 PointNet、单 batch 过拟合和 2 epoch 小规模训练均已验收。下一步使用完整的 3193／798 训练／验证划分开展 baseline 训练，按验证表现选择权重，再进行官方测试集最终评估。
