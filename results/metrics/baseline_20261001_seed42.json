@@ -1,0 +1,73 @@
+{
+  "run_name": "baseline_20261001_seed42",
+  "started_at": "2026-10-01T14:06:48.177370+08:00",
+  "status": "interrupted",
+  "purpose": "full training run",
+  "device": "cuda",
+  "device_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch_version": "2.13.0+cu130",
+  "config": {
+    "root": null,
+    "epochs": 50,
+    "batch_size": 32,
+    "num_points": 1024,
+    "learning_rate": 0.001,
+    "dropout": 0.3,
+    "val_fraction": 0.2,
+    "train_per_class": 0,
+    "val_per_class": 0,
+    "seed": 42,
+    "device": "cuda",
+    "num_workers": 0,
+    "cpu_threads": 4,
+    "run_name": "baseline_20261001_seed42",
+    "optimizer": "Adam",
+    "point_sampling": "fixed seed per mesh, cached in RAM",
+    "augmentation": false,
+    "drop_last": false
+  },
+  "split_counts": {
+    "train": 3193,
+    "validation": 798
+  },
+  "used_counts": {
+    "train": 3193,
+    "validation": 798
+  },
+  "used_class_counts": {
+    "train": {
+      "bathtub": 85,
+      "bed": 412,
+      "chair": 711,
+      "desk": 160,
+      "dresser": 160,
+      "monitor": 372,
+      "night_stand": 160,
+      "sofa": 544,
+      "table": 314,
+      "toilet": 275
+    },
+    "validation": {
+      "bathtub": 21,
+      "bed": 103,
+      "chair": 178,
+      "desk": 40,
+      "dresser": 40,
+      "monitor": 93,
+      "night_stand": 40,
+      "sofa": 136,
+      "table": 78,
+      "toilet": 69
+    }
+  },
+  "split_manifest": "results/metrics/baseline_20261001_seed42_split.json",
+  "official_test_used": false,
+  "history": [],
+  "best_selection": "highest validation accuracy; lowest validation loss breaks ties",
+  "best_epoch": null,
+  "best_validation": null,
+  "checkpoint": "checkpoints/baseline_20261001_seed42/best_model.pth",
+  "figure": "results/figures/baseline_20261001_seed42.png",
+  "interruption_observed_at": "2026-10-01T16:42:48.820303+08:00",
+  "interruption_note": "Host process no longer running after terminal session was lost; no completed epoch or checkpoint was recorded."
+}
