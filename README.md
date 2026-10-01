@@ -5,7 +5,7 @@
 
 ## 当前进度
 
-完整 baseline 已完成：基础 PointNet 在 RTX 4060 上训练 50 epoch，使用全部 3193／798 训练／验证样本。最佳模型为第 49 轮，验证准确率 94.99%（758／798）、验证 loss 0.1797，权重保存与重载检查通过。实验名为 `baseline_20261001_seed42_r2`。下一阶段是官方测试集评估；目前尚无测试集准确率。
+baseline 训练与官方测试集评估均已完成。基础 PointNet 在 RTX 4060 上训练 50 epoch，按验证集选定第 49 轮，验证准确率为 94.99%。该固定权重在官方 908 个测试样本上答对 817 个，测试总准确率 **89.98%**，平均类别准确率 **89.80%**。已保存混淆矩阵、每类指标和逐样本预测。下一阶段是预先设计数据增强及消融对比实验。
 
 
 ## 项目结构
@@ -16,6 +16,7 @@
 ├── requirements.txt         # 项目 Python 依赖清单
 ├── .gitignore
 ├── train.py                 # 训练入口，参数通过命令行配置
+├── test.py                  # 固定权重的官方测试集评估
 ├── configs/                 # 后续训练配置
 ├── datasets/                # 数据集读取源码，纳入 Git
 ├── models/                  # PointNet 模型源码
@@ -307,7 +308,7 @@ python train.py --device cuda --epochs 50 --batch-size 32 --num-points 1024 \
 
 保存的是第 49 轮。重新加载后完整验证集结果保持一致。
 训练 loss 整体下降，验证曲线在部分轮次明显波动，因此不直接使用最后一轮权重。
-上述数值属于验证集；官方测试集尚未评估。
+上述数值属于验证集；同一权重的官方测试结果见下节。
 
 - [完整指标与代码文件哈希](results/metrics/baseline_20261001_seed42_r2.json)
 - [训练／验证曲线](results/figures/baseline_20261001_seed42_r2.png)
@@ -315,12 +316,61 @@ python train.py --device cuda --epochs 50 --batch-size 32 --num-points 1024 \
 - 本地最佳权重：`checkpoints/baseline_20261001_seed42_r2/best_model.pth`，不纳入 Git。
 - 本地运行日志：`logs/baseline_20261001_seed42_r2.log`，不纳入 Git。
 
+### 官方测试集评估（已完成）
+
+`test.py` 加载按验证集选定的权重，沿用其中的点数与采样种子。
+当前 baseline 使用第 49 轮权重、1024 点、seed 42，每个测试模型只进行一次固定表面采样，不加增强、不做多次投票。
+脚本核对类别映射、官方测试样本数，并在有对应训练报告时核对最佳轮次和已记录的权重哈希。
+预测使用 `model.eval()` 和 `torch.inference_mode()`；结束后检查模型状态和权重文件没有变化。
+
+复现（默认生成独立结果名称）：
+
+```bash
+source .venv/bin/activate
+python test.py --checkpoint checkpoints/baseline_20261001_seed42_r2/best_model.pth \
+  --device cuda
+```
+
+2026-10-01 在 RTX 4060 上评估全部 908 个官方测试样本，耗时约 52.28 秒，包含网格读取和绘图：
+
+- 总准确率：817／908 = **89.98%**，按所有样本计算。
+- 平均类别准确率：**89.80%**，先计算每类准确率，再对 10 个类别取平均。
+- 测试 loss：0.402902。
+- 权重哈希与已选定的 baseline 一致；评估前后模型参数、BatchNorm 状态和权重文件均未改变。
+
+| 类别 | 正确／总数 | 准确率 |
+| --- | ---: | ---: |
+| bathtub（浴缸） | 47／50 | 94.00% |
+| bed（床） | 98／100 | 98.00% |
+| chair（椅子） | 100／100 | 100.00% |
+| desk（书桌） | 70／86 | 81.40% |
+| dresser（抽屉柜） | 77／86 | 89.53% |
+| monitor（显示器） | 96／100 | 96.00% |
+| night_stand（床头柜） | 62／86 | 72.09% |
+| sofa（沙发） | 97／100 | 97.00% |
+| table（桌子） | 76／100 | 76.00% |
+| toilet（马桶） | 94／100 | 94.00% |
+
+混淆矩阵的**行是真实类别，列是预测类别**，对角线表示预测正确。
+主要错误包括 table → desk 23 个、night_stand → dresser 17 个，反向错误分别为 8 个和 8 个。
+这两对类别的互相混淆合计占 56／91 个错误。预测示例用于观察现象，尚不能据此断言错误原因。
+
+- [完整测试指标和混淆矩阵数值](results/metrics/test_baseline_20261001_seed42.json)
+- [逐样本预测 CSV](results/metrics/test_baseline_20261001_seed42_predictions.csv)
+- [混淆矩阵图片](results/figures/test_baseline_20261001_seed42_confusion_matrix.png)
+- [正确／错误点云示例](results/figures/test_baseline_20261001_seed42_examples.png)
+
+点云示例按数据集顺序，选取至多三个不同真实类别的首个正确／错误案例；标题绿／红色区分正误，点颜色仅表示 z 坐标。
+CSV 中的 confidence 为模型对预测类别给出的 Softmax 分数，不参与样本筛选或权重选择。
+验证集 94.99% 和测试集 89.98% 分别来自不同数据：验证集用于选择模型，测试集用于记录选定模型的独立评估结果。
+本次 baseline 的权重选择已经固定；后续对比实验应预先确定方案，使用验证集调参与选权重。
+
 ## 实验与可视化
 
-已完成完整 baseline 训练，并生成诊断、小规模训练及完整训练曲线。待开展：官方测试集评估、数据增强、点数对比、Pooling 消融，以及测试混淆矩阵和预测可视化。
+已完成完整 baseline 训练与测试，生成训练曲线、测试混淆矩阵和预测示例。待开展：数据增强、点数对比和 Pooling 消融。
 
 正式实验记录见 [experiments/README.md](experiments/README.md)。
 
 ## 后续工作
 
-完整 baseline 训练已完成，最佳权重已按验证集表现选定。下一步在官方 908 个测试样本上评估总准确率、每类准确率和混淆矩阵，再安排对比实验。测试结果不用于重新选择本次 baseline 的权重。
+baseline 的数据准备、训练、验证选模、测试评估和可视化已形成完整流程。下一步预先定义对比实验，每次改变一个因素，用验证集比较与选择配置，保留当前 baseline 的全部记录。
