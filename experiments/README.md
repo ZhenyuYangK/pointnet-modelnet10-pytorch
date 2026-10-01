@@ -1,6 +1,6 @@
 # 实验记录
 
-已完成下列训练流程诊断，正式 baseline 与对比实验尚未开始。每次运行独立记录，不覆盖历史结果。
+已完成训练流程诊断与完整 baseline 训练；官方测试集评估和对比实验尚未开始。每次运行独立记录，不覆盖历史结果。
 
 ## 2026-10-01：单 batch 过拟合诊断
 
@@ -39,7 +39,7 @@
 
 - 最佳 epoch：2，按验证准确率优先、相同时按较低验证 loss 选择。
 - 保存权重重新加载后，在相同验证点云上的 loss／accuracy 与记录一致。
-- 结论：训练流程验收通过。验证集仅 20 个样本，准确率 15% 为 3/20；验证 loss 上升，不应视为模型性能已达标。正式 baseline 和最终测试尚未开展。
+- 结论：训练流程验收通过。验证集仅 20 个样本，准确率 15% 为 3/20；验证 loss 上升，不应视为模型性能已达标。该次实验时尚未开展完整 baseline 和最终测试。
 - [指标与配置](../results/metrics/train_small_20261001_seed42.json)、[完整及实际划分名单](../results/metrics/train_small_20261001_seed42_split.json)、[曲线](../results/figures/train_small_20261001_seed42.png)。
 - 本地权重：`checkpoints/train_small_20261001_seed42/best_model.pth`，不纳入 Git。
 
@@ -49,6 +49,25 @@
 python train.py --epochs 2 --batch-size 8 --num-points 256 \
   --train-per-class 8 --val-per-class 2
 ```
+
+## 2026-10-01：完整 baseline（已完成）
+
+- 实验编号：`baseline_20261001_seed42_r2`，RTX 4060 Laptop GPU。
+- 基础 PointNet，无 T-Net，max pooling，Dropout 0.3，无数据增强。
+- 1024 点，batch size 32，Adam 学习率 0.001，50 epoch，seed 42，DataLoader worker 0。
+- 使用完整训练／验证划分 3193／798，文件名单与小规模运行所依据的完整划分一致。
+- 按验证准确率选最佳权重，准确率相同时比较验证 loss。官方测试集保留到下一阶段。
+- 已完成全部 50 epoch；每轮实际训练 3193 个、验证 798 个样本。
+- 最佳 epoch：49，训练准确率 99.37%，验证准确率 94.99%（758/798），验证 loss 0.179686。
+- 最后 epoch 50：训练准确率 98.40%，验证准确率 93.23%，验证 loss 0.279129。
+- 总耗时约 342.25 秒；首轮约 274.28 秒，包含首次网格读取与点云缓存。
+- 重新加载最佳模型后，验证 loss 与 accuracy 与原记录一致；权重 SHA256 和训练源码文件 SHA256 已记录。
+- 观察：训练 loss 整体下降；验证曲线有明显波动，部分轮次出现 loss 峰值。第 50 轮弱于第 49 轮，因此采用按验证集选定的最佳模型。
+- 结论：完整训练和权重选择流程完成，94.99% 为验证结果。官方测试结果将在下一阶段单独记录；尚不能将其写成测试准确率。
+- [完整指标](../results/metrics/baseline_20261001_seed42_r2.json)、[划分](../results/metrics/baseline_20261001_seed42_r2_split.json)、[曲线](../results/figures/baseline_20261001_seed42_r2.png)。
+- 本地权重：`checkpoints/baseline_20261001_seed42_r2/best_model.pth`，不纳入 Git。
+- 本地运行日志：`logs/baseline_20261001_seed42_r2.log`。
+- 首次尝试 `baseline_20261001_seed42` 在第 1 个 epoch 完成前中断，没有保存权重；原记录保留为 interrupted，新实验使用相同配置从头开始。
 
 ## 记录模板
 
